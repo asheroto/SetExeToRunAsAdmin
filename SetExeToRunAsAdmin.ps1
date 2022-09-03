@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.0.4
+.VERSION 0.0.5
 
 .GUID 3e63f459-74c5-4487-bccb-dc10363214f5
 
@@ -8,13 +8,16 @@
 
 .COMPANYNAME asheroto
 
-.TAGS PowerShell Windows exe set run administrator add compatibility
+.TAGS PowerShell Windows exe set run remove unset administrator add compatibility admin
+
+.PROJECTURI https://github.com/asheroto/UninstallOneDrive
 
 .RELEASENOTES
 [Version 0.0.1] - Initial Release.
 [Version 0.0.2] - Fixed example.
 [Version 0.0.3] - Added option to unset the exe to run as administrator and refactored function code.
 [Version 0.0.4] - Fixed bug in version specification and improved examples.
+[Version 0.0.4] - Added project link and improved tags.
 
 #>
 
@@ -34,8 +37,10 @@
 .EXAMPLE
 	Unset EXEs to run as Administrator: SetExeToRunAsAdmin.ps1 -Path "C:\Shared\*.exe" -UnsetInstead
 .NOTES
-    Version      : 0.0.4
+    Version      : 0.0.5
     Created by   : asheroto
+.LINK
+    Project Site: https://github.com/asheroto/SetExeToRunAsAdmin
 #>
 
 

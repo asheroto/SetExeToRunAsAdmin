@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.0.7
+.VERSION 0.0.8
 
 .GUID 3e63f459-74c5-4487-bccb-dc10363214f5
 
@@ -20,26 +20,27 @@
 [Version 0.0.5] - Added project link and improved tags.
 [Version 0.0.6] - Fixed version specification.
 [Version 0.0.7] - Final version specification fix.
+[Version 0.0.8] - Improved description.
 
 #>
 
 <#
 .SYNOPSIS
-    Sets an EXE to run as Administrator. Usage: SetExeToRunAsAdmin.ps1 -Path <exe path> (-CurrentUser | -AllUsers)
+    Sets an EXE to run as Administrator. Usage: SetExeToRunAsAdmin -Path <exe path> (-CurrentUser | -AllUsers)
 .DESCRIPTION
-    Sets an EXE to run as Administrator. Usage: SetExeToRunAsAdmin.ps1 -Path <exe path> (-CurrentUser | -AllUsers)
+    Sets an EXE to run as Administrator. Usage: SetExeToRunAsAdmin -Path <exe path> (-CurrentUser | -AllUsers)
 
 	Alternatively you can use the -UnsetInstead parameter to unset the exe to run as administrator.
 .EXAMPLE
-    Set EXE/EXEs to run as Administrator: SetExeToRunAsAdmin.ps1 -Path <exe path> (-CurrentUser | -AllUsers)
+    Set EXE/EXEs to run as Administrator: SetExeToRunAsAdmin -Path <exe path> (-CurrentUser | -AllUsers)
 .EXAMPLE
-	Unset EXE/EXEs to run as Administrator: SetExeToRunAsAdmin.ps1 -Path <exe path> (-CurrentUser | -AllUsers) -UnsetInstead
+	Unset EXE/EXEs to run as Administrator: SetExeToRunAsAdmin -Path <exe path> (-CurrentUser | -AllUsers) -UnsetInstead
 .EXAMPLE
-	Set EXEs to run as Administrator: SetExeToRunAsAdmin.ps1 -Path "C:\Shared\*.exe"
+	Set EXEs to run as Administrator: SetExeToRunAsAdmin -Path "C:\Shared\*.exe"
 .EXAMPLE
-	Unset EXEs to run as Administrator: SetExeToRunAsAdmin.ps1 -Path "C:\Shared\*.exe" -UnsetInstead
+	Unset EXEs to run as Administrator: SetExeToRunAsAdmin -Path "C:\Shared\*.exe" -UnsetInstead
 .NOTES
-    Version      : 0.0.7
+    Version      : 0.0.8
     Created by   : asheroto
 .LINK
     Project Site: https://github.com/asheroto/SetExeToRunAsAdmin
@@ -113,8 +114,8 @@ Write-Output ""
 # SIG # Begin signature block
 # MIIp0AYJKoZIhvcNAQcCoIIpwTCCKb0CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBEjyAhqSuO2WnZ
-# oR7TpTGwA0JymAZ0O2/7Btvy/6/tiqCCDrkwggawMIIEmKADAgECAhAIrUCyYNKc
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB2T8oMXUExTbGK
+# hL+qpSNCwqNUrVtXU8yzp/u7wYyA66CCDrkwggawMIIEmKADAgECAhAIrUCyYNKc
 # TJ9ezam9k67ZMA0GCSqGSIb3DQEBDAUAMGIxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xITAfBgNV
 # BAMTGERpZ2lDZXJ0IFRydXN0ZWQgUm9vdCBHNDAeFw0yMTA0MjkwMDAwMDBaFw0z
@@ -198,22 +199,22 @@ Write-Output ""
 # aW5nIFJTQTQwOTYgU0hBMzg0IDIwMjEgQ0ExAhAOyLAmjUpdRlQheQrwADJFMA0G
 # CWCGSAFlAwQCAQUAoHwwEAYKKwYBBAGCNwIBDDECMAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIAxWCf93ABymmfIqgE+s9pF53Cmnmyty4tzX8GJOVVUVMA0GCSqG
-# SIb3DQEBAQUABIICAEFqVEGVIe1XT4FlxOhL/TxyriWZMoofS0D+9DFRn8ymfmSM
-# 85BHCBBMSzKrsnjEQWvVttZdGOHX/tXKqu0GuPlaz63DiWX6skvGXUG/Be2sAijN
-# 9OVMUZDcc+uDPOhdCCEJYRNMRI1UIl6lxEzWCghViPiohPv3deFZu3ecAOsYB9oE
-# DOiTm0zVet0Urc6f9SoKONu4SnI3SzT3jqj7Y5r3ejsnVUwmZxxNM4p/rIoV1ULZ
-# fmrHw1ZDILQiaUoqOHXkk1OScnEwU8Y1WQef3u5HASoQU8QFilyN6eo0ZWogGljh
-# TgFoq5QZ5PlAPWDGkVXD3nYTBPxTiTHBjuFRH380UJ2wh34ho3qKeKKudkshBbCr
-# tZymYFWA0JO7FU2BEi8KZEU1hHeL0+56SvpGNuy5dDUpC8DZUHAMpMXOWxY3fHTK
-# T0LhfZ2KfoPQE/pchYLg01+j/cf6WUbn/aG7nD57LEhSHIrEVkIeumJOzh+OfQg7
-# vmHtI6ZbtFyCIAV/an9RJQwSMNZt9KXO+avauvaiSkLeLmYYp4wMYdxagFMEUBbL
-# HEDb5TwBl9BY9vhNi9YU6/Pin1WY0Bd3ueNtblPhxkftqhOYbG3CUi2OOEN9MBQR
-# mxIHM5dxQtV8N/X3uon4YIZonwN8CFbsoIlkoj5Nook1S7HJm74sI8zkVaQNoYIX
+# hvcNAQkEMSIEIMn4m4ZKSTR4VpTSWbeFNIX8k5xXZunOV8Q5Ygt5IaZwMA0GCSqG
+# SIb3DQEBAQUABIICADh+IHzMxBn4NgRqYxiRBaxQfIZXXwxjy5FYBuYndkmcSSdW
+# mZ1PcGjg1CkvjtghlsWaSUC8+oX85V4Cs1aDXNWLpMF2n4XZebjkXOTZcXDMtIxT
+# OyMXxZ70ueuXYZqaApvplnIDO48mZswvC+JmwCs1i08jBd6HWcudIGt8lnrzvNBL
+# QTJGg95Tj1QLK7L5Z7aF0b8lwGTbfsmT5BlpydBEw1N8amhlLJggma8RhMcfSFYl
+# XiKH5PjgcH9G1gdPO0TodMouipWAWpUOwLZfZ0abz/YWEpQni5xWohOwocrXDDmh
+# vo5ZGO93Z4AYyoX3cQd1nqO0uKtr6n+qFOVMAHJY5YZSZZfJptD+A75UKTaVj5/W
+# pu49ZgHlDZM3Cgo5BF8fohNENQZ7X/lELsW2vselRh7r56GFB9wXsCmcEpUA+/pX
+# VjTwTreoSgMmziVOMt+jsD2hsvhJinSrFogfEUoR3mBefLjbO+p7K9ztuUo6+e+q
+# 8Yxq8c3352zXnnGl7kCh5oU20UtoOnctqPbghY6/CgPxipT+h4TXROvFlxrokE3O
+# z9d2oOI7yRQ7lrscJHQwYLFuneKOCAKOfhVLN1Dl1sddVSOYf+rjgfzOoWCinUMp
+# B0NNqDcfIU7vqKG5WyEJbco0EYrZsDnldZ/skT8DB8Ijsa7eLcc8Lu62MJdgoYIX
 # QzCCFz8GCisGAQQBgjcDAwExghcvMIIXKwYJKoZIhvcNAQcCoIIXHDCCFxgCAQMx
 # DzANBglghkgBZQMEAgEFADB3BgsqhkiG9w0BCRABBKBoBGYwZAIBAQYJYIZIAYb9
-# bAcBMDEwDQYJYIZIAWUDBAIBBQAEIEzUucT6prr3OwwhCoSdCXYtVdHJnk5ocMs8
-# kQBrH+bPAhBqdR0RdxBpxxGA7yQ33DkoGA8yMDIyMDkwMzExNDE1N1qgghMNMIIG
+# bAcBMDEwDQYJYIZIAWUDBAIBBQAEIB0hOA4/Z/vfxdi3HNssH3F4dKYG9YfpSbwJ
+# Rso5N6uJAhBmEmfUd+p5Me74z0Q3X0FMGA8yMDIyMDkwMzExNTkyMVqgghMNMIIG
 # xjCCBK6gAwIBAgIQCnpKiJ7JmUKQBmM4TYaXnTANBgkqhkiG9w0BAQsFADBjMQsw
 # CQYDVQQGEwJVUzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xOzA5BgNVBAMTMkRp
 # Z2lDZXJ0IFRydXN0ZWQgRzQgUlNBNDA5NiBTSEEyNTYgVGltZVN0YW1waW5nIENB
@@ -319,20 +320,20 @@ Write-Output ""
 # BAYTAlVTMRcwFQYDVQQKEw5EaWdpQ2VydCwgSW5jLjE7MDkGA1UEAxMyRGlnaUNl
 # cnQgVHJ1c3RlZCBHNCBSU0E0MDk2IFNIQTI1NiBUaW1lU3RhbXBpbmcgQ0ECEAp6
 # SoieyZlCkAZjOE2Gl50wDQYJYIZIAWUDBAIBBQCggdEwGgYJKoZIhvcNAQkDMQ0G
-# CyqGSIb3DQEJEAEEMBwGCSqGSIb3DQEJBTEPFw0yMjA5MDMxMTQxNTdaMCsGCyqG
+# CyqGSIb3DQEJEAEEMBwGCSqGSIb3DQEJBTEPFw0yMjA5MDMxMTU5MjFaMCsGCyqG
 # SIb3DQEJEAIMMRwwGjAYMBYEFIUI84ZRXLPTB322tLfAfxtKXkHeMC8GCSqGSIb3
-# DQEJBDEiBCCgy0oeMG5hCVHodjrhlYUTgSnJDRsTzUqpGxI9PgSSpjA3BgsqhkiG
+# DQEJBDEiBCAXy+pve9Cjax+M1366b/OOlMBilvF+e+M4Fyg9Ch/fWjA3BgsqhkiG
 # 9w0BCRACLzEoMCYwJDAiBCCdppAVw0nGwYl4Rbo1gq1wyI+kKTvbar6cK9JTknnm
-# OzANBgkqhkiG9w0BAQEFAASCAgB/uUOqs1d+EnlR4IpXrv/dDUi9VDqd9NrpLcma
-# f+UZrZ0qgE9YrMiK2QRIX4cSVOb9qDxH5V/R39+tFg5qo700C2GiGGU1AWJz6HID
-# rYNb1gTRNUq6geNH1wMeB36TIaxBZObdMWIYoJBvute6j3hGm88X6e7GHw2JvNbf
-# c51J8iimsIYXjlXQU4juUF52kY4Wt5C28/Wer78wOV40KOtYDaRl28N2ZpB4nH7n
-# RQkmn0Y+xRKcwk7yQhR8Ew1v8AamTc7Nvbce+8NAME9iN+XTnx8m8lIrt5Bg12LD
-# 062Mg/PHKs8l9SezE+sVe25wvvrirarTqQyhIgVGvAt9OXcFD8am4aRK8QuRcPbQ
-# 7OY/Ll++x+Nq+aQA9mSiPnsKx7MNQQ/S/Wr53R2ZcCe9u0bCAnAIYOcbVGnF23i/
-# ZVBy249axLmKlZwrJg/zn1z4GSv2GAsxj9LqOKjiU3yrlcBf2ZogIJmJtlhHY5Qj
-# IK8uckM93yaOtXesN1eD9i6C0uzSGE2dER/gdaOjF/F1qHst+z9K8XpUgSrOM8cD
-# LfZmit7/ZBU1krD4joqoRmVItjwzSR7KvOb8Y/JDiYTGrskrbYv3NgpGM9lK+Mef
-# akdFMVzEWumVd+t4EpZ7PwjemdlI8Re5YNVj460gkHg6CJl9rSpEgOt/CkcWHuby
-# HHiqLw==
+# OzANBgkqhkiG9w0BAQEFAASCAgCY5pRPfPp5+m08v/O+NfvEgrnxRTLkJmr7XWSb
+# gTVNrfQ2JGZBNQscCZfK66hiEncZwbcqSdipSj96MfnT3xgxOxgIhvUu8RY7BOJU
+# mIBXWAN+0bAvuEdS4/cj75FYwTAvxiSM6F0tsWTXHMtrfLl9E5MBKo8wF8VJB6Vt
+# dL8dO4iVa2DsTvmV+n6Oj/ouuqsXm2P2coh9AslW3feTrRIczHvvgmMry9Z0wTo4
+# 1MBGBrlWUDKuV0690wJJyQrha2TcL2xUVcwZILZFTq4Mak79+NR4+tLLkaenPqBu
+# 3DaCHsMW9qJM3TJqVCfFNjB1svb+Bm39g0VLE4YW+s600L0FPgqQrSgzBVKPrDlw
+# Qh94CoZGFZUO4qxUKex1xs13uPQlesLj1scLc0Z27pjEZmgMfdzlgSxvLmlfDj6I
+# R+EmnffFReKsxJSiWj3TSz+2r2N/XWGcigc3MpOp1YFBbMKIazUn4Fwzm7c4TEUX
+# iVoctqrv4N+YSJUofStGdIY+FXZLXaSAFIxgq3NTSXaauuzpVekij8eauh7cEYCb
+# 7R4fm/K8HGGeZNLB0AFzvCPxQ5rE5qB6ylDFWVZF1WH4dHdnt4iamjkcUNJEgrzK
+# JuJI+t93Eon9M0I5o0P8HHPapiMtP6u1BQ2RF9MYTN0ko/HffVkqS6n+4WzWsWB8
+# tyhjOg==
 # SIG # End signature block

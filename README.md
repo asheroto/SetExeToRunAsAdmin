@@ -6,11 +6,15 @@
 
 On any Windows machine, open PowerShell as Administrator and type...
 
-```
+```powershell
 Install-Script SetExeToRunAsAdmin
 ```
 
 And accept the prompts.
+
+This script is published on [PowerShell Gallery](https://www.powershellgallery.com/packages/SetExeToRunAsAdmin).
+
+The code is signed, so if you want to change it, just removed the `# SIG # Begin signature block` line and everything beneath it.
 
 ### Usage
 
@@ -19,13 +23,13 @@ And accept the prompts.
 Set EXE/EXEs to run as Administrator:
 
 ```powershell
-SetExeToRunAsAdmin.ps1 -Path <exe path> (-CurrentUser | -AllUsers)
+SetExeToRunAsAdmin -Path <exe path> (-CurrentUser | -AllUsers)
 ```
 
 Unset EXE/EXEs to run as Administrator:
 
 ```powershell
-SetExeToRunAsAdmin.ps1 -Path <exe path> (-CurrentUser | -AllUsers) -UnsetInstead
+SetExeToRunAsAdmin -Path <exe path> (-CurrentUser | -AllUsers) -UnsetInstead
 ```
 
 ### Examples

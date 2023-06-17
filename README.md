@@ -29,9 +29,9 @@ SetExeToRunAsAdmin -Path <exe path/pattern> (-CurrentUser | -AllUsers | -UnsetIn
 |Parameter|Description|Required|
 |---|---|---|
 |`-Path`|The path of the EXE or pattern to match|Yes, unless using the RegJump switch|
-|`-CurrentUser`|Set for the current user (default)
+|`-CurrentUser`|Set for the current user (default)|No|
 |`-AllUsers`|Set for all users|No|
-|`-UnsetInstead`|Unset|No
+|`-UnsetInstead`|Unset|No|
 |`-RegJump`|Use RegJump to jump to the app registry key|No|
 
 ## Examples

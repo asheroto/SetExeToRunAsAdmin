@@ -1,17 +1,10 @@
 <#PSScriptInfo
-
-.VERSION 1.0
-
+.VERSION 1.2.0
 .GUID 3e63f459-74c5-4487-bccb-dc10363214f5
-
 .AUTHOR asherto
-
 .COMPANYNAME asheroto
-
 .TAGS PowerShell, Windows, exe, set, run, remove, unset, administrator, add, compatibility, admin
-
 .PROJECTURI https://github.com/asheroto/SetExeToRunAsAdmin
-
 .RELEASENOTES
 - [Version 0.0.1] Initial Release.
 - [Version 0.0.2] Fixed example.
@@ -21,19 +14,20 @@
 - [Version 0.0.6] Fixed version specification.
 - [Version 0.0.7] Final version specification fix.
 - [Version 0.0.8] Improved description.
-- [Version 1.0.0] Added RegJump option. Removed patch from version specification.
-
+- [Version 1.0] Added RegJump option. Removed patch from version specification.
+- [Version 1.1] Added support to detect if UnsetInstead doesn't exist. Optimized code.
+- [Version 1.2.0] Improved parameter usage. Added checks for invalid commands. Improved examples. Optimized code. Added back patch in version specification.
 #>
 
 <#
 .SYNOPSIS
-Sets an EXE to run as Administrator.
+Sets or unsets an EXE file or multiple EXE files to run as Administrator.
 
 .DESCRIPTION
-This script allows an EXE file or multiple EXE files to be set to run as an Administrator.
+This script allows you to set or unset an EXE file or multiple EXE files to run as Administrator. The script modifies the compatibility settings of the EXE file(s) to ensure they run with elevated privileges.
 
 .PARAMETER Path
-The path to the EXE file or pattern to match. This parameter is required unless the RegJump switch is used.
+Specifies the path to the folder containing the EXE file(s) to modify, or the path to a specific EXE file. This parameter is required unless the RegJump switch is used.
 
 .PARAMETER RegJump
 A switch to use RegJump to jump to the application's registry key.
@@ -42,58 +36,69 @@ A switch to use RegJump to jump to the application's registry key.
 A switch to set the EXE file(s) to run as Administrator for the current user.
 
 .PARAMETER AllUsers
-A switch to set the EXE file(s) to run as Administrator for all users.
+A switch to set the EXE file(s) to run as Administrator for all users. Requires administrator privileges.
 
 .PARAMETER UnsetInstead
 A switch to unset the EXE file(s) to run as Administrator. If not provided, the EXE file(s) will be set to run as Administrator.
 
 .EXAMPLE
-SetExeToRunAsAdmin -Path "C:\Shared\example.exe"
+SetExeToRunAsAdmin -Path "C:\Program Files\Application\app.exe"
 
-Set EXE to run as Administrator
-
-.EXAMPLE
-SetExeToRunAsAdmin -Path "C:\Shared\example.exe" -UnsetInstead
-
-Unset EXE to run as Administrator
+Sets the "app.exe" file to run as Administrator.
 
 .EXAMPLE
-SetExeToRunAsAdmin -Path "C:\Shared\*.exe"
+SetExeToRunAsAdmin -Path "C:\Program Files\Application\app.exe" -AllUsers
 
-Set multiple EXEs to run as Administrator
+Sets the "app.exe" file to run as Administrator for all users.
 
 .EXAMPLE
-SetExeToRunAsAdmin -Path "C:\Shared\*.exe" -UnsetInstead
+SetExeToRunAsAdmin -Path "C:\Program Files\Application\app.exe" -UnsetInstead
 
-Unset multiple EXEs to run as Administrator
+Unsets the "app.exe" file to run as Administrator.
+
+.EXAMPLE
+SetExeToRunAsAdmin -Path "C:\Program Files\Application\" -AllUsers
+
+Sets all EXE files in the "C:\Program Files\Application" folder to run as Administrator.
 
 .EXAMPLE
 SetExeToRunAsAdmin -RegJump
 
-Jump to user's run as Administrator registry key
+Jumps to the user's run as Administrator registry key.
 
 .EXAMPLE
-SetExeToRunAsAdmin -CurrentUser -RegJump
+SetExeToRunAsAdmin -RegJump
 
-Jump to current user's run as Administrator registry key
-
-.EXAMPLE
-SetExeToRunAsAdmin -AllUsers -RegJump
-
-Jump to all users' run as Administrator registry key
-
+Jumps to the run as Administrator registry key for all users.
 #>
 
-[CmdletBinding(DefaultParameterSetName = 'PathRequired')]
+[CmdletBinding()]
 param (
-	[Parameter(Mandatory = $true, ParameterSetName = 'PathRequired')][String]$Path,
-	[Parameter(Mandatory = $false, ParameterSetName = 'RegJump')][Switch]$RegJump,
+	[string]$Path,
+	[Switch]$UnsetInstead,
 	[Switch]$CurrentUser,
 	[Switch]$AllUsers,
-	[Switch]$UnsetInstead
+	[Switch]$RegJump
 )
 
-function Set-CompatibilityKey {
+# Ensure that -RegJump is not used with -Path or -UnsetInstead
+if ($RegJump -and ($Path -or $UnsetInstead)) {
+	Write-Error "-RegJump cannot be used with -Path or -UnsetInstead simultaneously."
+	return
+}
+
+# If Path is not specified and -RegJump is not used, explain that -Path is required
+if (-not $Path -and -not $RegJump) {
+	Write-Error "-Path is required unless -RegJump is used."
+	return
+}
+
+# If -Path is used without -CurrentUser or -AllUsers, default to -CurrentUser
+if ($Path -and -not ($CurrentUser -or $AllUsers)) {
+	$CurrentUser = $true
+}
+
+function Get-CompatibilityKey {
 	param([Switch]$AllUsers)
 	if ($AllUsers) {
 		return "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
@@ -102,8 +107,59 @@ function Set-CompatibilityKey {
 	}
 }
 
+function AddRunAsAdministrator {
+	param (
+		[Parameter(Mandatory = $true)]
+		[String]$ExePath,
+
+		[Parameter(Mandatory = $false)]
+		[Switch]$UnsetInstead
+	)
+
+	if ($UnsetInstead) {
+		# If we want to unset the EXE from running as Administrator
+		# Remove the item property, if it exists
+		if ((Get-Item $CompatbilityKey).Property -Contains $ExePath) {
+			Remove-ItemProperty $CompatbilityKey -Name $ExePath | Out-Null
+			return $ExePath
+		} else {
+			Write-Warning "The registry key doesn't exist for:`n$ExePath`n"
+			return $null
+		}
+	} else {
+		# If we want to set the EXE to run as Administrator
+		if ((Get-Item $CompatbilityKey).Property -Contains $ExePath) {
+			# If the key's value does not contain RUNASADMIN, then append it, prefixed by space
+			$Value = Get-ItemPropertyValue $CompatbilityKey -Name $ExePath
+			if (!($Value.Contains("RUNASADMIN"))) {
+				Set-ItemProperty $CompatbilityKey -Name $ExePath -Value ($Value + " RUNASADMIN") | Out-Null
+			}
+		} else {
+			# Create a new key with the RUNASADMIN value (with tilde)
+			New-ItemProperty $CompatbilityKey -Name $ExePath -Value "~ RUNASADMIN" | Out-Null
+		}
+		return $ExePath
+	}
+}
+
+function Get-ExeFiles {
+	param ([Parameter(Mandatory = $true)][string]$Path)
+
+	if (Test-Path $Path -PathType Leaf) {
+		# If $Path is a file, return the specified EXE file
+		return Get-Item -Path $Path
+	} elseif (Test-Path $Path -PathType Container) {
+		# If $Path is a folder, return all EXE files inside the folder
+		return Get-ChildItem -Path $Path -Filter "*.exe"
+	} else {
+		# Invalid path specified
+		Write-Warning "Invalid path specified: $Path"
+		return $null
+	}
+}
+
 # Default to CurrentUser
-$CompatbilityKey = Set-CompatibilityKey
+$CompatbilityKey = Get-CompatibilityKey
 
 # If AllUsers is specified
 if ($AllUsers) {
@@ -113,7 +169,7 @@ if ($AllUsers) {
 		Write-Warning "Insufficient permissions to run this script. Open the PowerShell console as an administrator and run this script again."
 		Exit
 	}
-	$CompatbilityKey = Set-CompatibilityKey -AllUsers
+	$CompatbilityKey = Get-CompatibilityKey -AllUsers
 }
 
 # If RegJump is specified, then jump to the registry key
@@ -133,29 +189,6 @@ if ($RegJump) {
 	exit
 }
 
-function AddRunAsAdministrator {
-	param (
-		[Parameter(Mandatory = $true)][String]$ExePath,
-		[Parameter(Mandatory = $false)][Switch]$UnsetInstead
-	)
-	if ($UnsetInstead) {
-		# If we want to unset the EXE from running as Administrator
-		Remove-ItemProperty -Path $CompatbilityKey -Name $ExePath -ErrorAction SilentlyContinue
-	} else {
-		# If we want to set the EXE to run as Administrator
-		if ((Get-Item $CompatbilityKey).Property -Contains $ExePath) {
-			# If the key's value does not contain RUNASADMIN, then append it, prefixed by space
-			$Value = Get-ItemPropertyValue $CompatbilityKey -Name $ExePath
-			if (!($Value.Contains("RUNASADMIN"))) {
-				Set-ItemProperty $CompatbilityKey -Name $ExePath -Value ($Value + " RUNASADMIN") | Out-Null
-			}
-		} else {
-			# Create a new key with the RUNASADMIN value (with tilde)
-			New-ItemProperty $CompatbilityKey -Name $ExePath -Value "~ RUNASADMIN" | Out-Null
-		}
-	}
-}
-
 # Extra line
 Write-Output ""
 
@@ -164,24 +197,41 @@ if (!(Test-Path $CompatbilityKey)) {
 	New-Item $CompatbilityKey -Force | Out-Null
 }
 
-$ExeSearch = Get-ChildItem -Path $Path -Filter "*.exe"
 
-if ($UnsetInstead) {
-	$ExeSearch | ForEach-Object { Write-Output "Unsetting $($_.Name) to run as administrator"; AddRunAsAdministrator -ExePath $_.FullName -UnsetInstead; }
+# Get list of EXE files
+$exes = Get-ExeFiles -Path $Path
+
+# Get current user or all user verbiage
+if ($AllUsers) {
+	$UserVerbiage = "all users"
 } else {
-	$ExeSearch | ForEach-Object { Write-Output "Setting $($_.Name) to run as administrator"; AddRunAsAdministrator -ExePath $_.FullName; }
+	$UserVerbiage = "the current user"
 }
-Write-Output ""
 
-# Inform of registry key
-Write-Output "The registry key has been updated:"
-Write-Output $CompatbilityKey.Replace(":", "")
+# Perform the action on each EXE file
+if ($UnsetInstead) {
+	$exes | ForEach-Object {
+		$updatedExe = AddRunAsAdministrator -ExePath $_.FullName -UnsetInstead
+		if ($updatedExe) {
+			Write-Output "Unset app to run as Administrator for ${UserVerbiage}: $updatedExe"
+		}
+	}
+} else {
+	$exes | ForEach-Object {
+		$updatedExe = AddRunAsAdministrator -ExePath $_.FullName
+		if ($updatedExe) {
+			Write-Output "Set app to run as Administrator for ${UserVerbiage}: $updatedExe"
+		}
+	}
+}
+
+# Extra line
 Write-Output ""
 # SIG # Begin signature block
 # MIIpMQYJKoZIhvcNAQcCoIIpIjCCKR4CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBDQXppWLmD6sJZ
-# ODDuYo9jap+1K9dbwMcbbNEWcsNJnaCCDh8wggawMIIEmKADAgECAhAIrUCyYNKc
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD+wgLawX6BrAjI
+# r4XQLnkwGYtC3bl7QuEbAXqH1/mjLqCCDh8wggawMIIEmKADAgECAhAIrUCyYNKc
 # TJ9ezam9k67ZMA0GCSqGSIb3DQEBDAUAMGIxCzAJBgNVBAYTAlVTMRUwEwYDVQQK
 # EwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xITAfBgNV
 # BAMTGERpZ2lDZXJ0IFRydXN0ZWQgUm9vdCBHNDAeFw0yMTA0MjkwMDAwMDBaFw0z
@@ -262,22 +312,22 @@ Write-Output ""
 # NiBTSEEzODQgMjAyMSBDQTECEA3RSTbNfh/ebxfsd2XDEE0wDQYJYIZIAWUDBAIB
 # BQCgfDAQBgorBgEEAYI3AgEMMQIwADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIB
 # BDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQg
-# kKEL+7RMySJXrM2mjeb6gh2faGYltlXsNlhXgXqKHvkwDQYJKoZIhvcNAQEBBQAE
-# ggIAPJ5isTmgpIQmmLbI27HWxhh5jfprMIpGv/vcNTNFnP2hFCXWbzZQj34RAGnB
-# b5TXeZ1VoBc0S+VnWl5oesESZvawxTL05yscigwGWGgZqTd1OdC+BlLPCdaQ59aH
-# emRWowHHrryMaErec0Zw0Z75EsJQPbPYoyKjHofzNvjruV0Llf5HTI38fc2G1T1O
-# /H8TpLjd7ARXBmx89TpcVAwrLhHg8XcYwMgNZNFBdhOFDHQGkhWkMgV5Vvrr9Gqz
-# c4FB6NkOl49Zc50NHKkpPswihnC7BPIW9aPck2vhsVtyRBfG8zs/1/XfVbVthwcj
-# X1nHAkRHr117kgrZYbrnIzdrqdHBaVtjQCwmimPWXsAhmZQLptfP/a/XOcSqxSqm
-# NiwbcQAPnW9WAVJrxQpIQ1Bf1ntvszHECpotcVAAAiWnrdK6SS3ZuY6p+QrJX8Hv
-# Sok3F0i3byPN/s1EHQ5Kr3v76vgirVE/wnArY2ZoKQKFJaPVUvuhoehMYKW61uvr
-# f6qeGxyLyFJEhweSWqjzvTNagUFgouBhRqR/Gr0gzX7yYGYFdx0TYiTcVTl5HXu4
-# WiPKjHvDwRE/rwDRtRUAnzRgXkbYcINzD7lDGzIjkj2yccwaf7nRLh5iKJq/tRBQ
-# 8CDr410GCtVns5mB+gjsIQQnag3t2ykLGyVuDp+BV1wGlzahghc+MIIXOgYKKwYB
+# 6aYh0qd6Eis4/0R+5gSOALX0/6rOllpw+jOu6LcY40AwDQYJKoZIhvcNAQEBBQAE
+# ggIAi+Kso46n10d7kKJQ1EgqRkshR8TTJzIfaVntPIe1CbA9NhYgK+s+ZRV9SU/F
+# qIaAJE/SPxZw13PcsB2Btx96Ndlfho58YxWLwbSbBsAs/9PcDB61LiifczwZsLZ0
+# ockjmHQm66XOgiC0OmUtpQC6WNEhOvWSILIGAbTbK2QJU0VY89fLwhB/GrMl/zIT
+# YTYb64/UYwl0rWnunePpxagxvnKuWcArAVvDqRoMXJnO6c+qbY/UBoXLnXCp1BAj
+# CzM1WjR12rE1yhkpcNmQX62cKUTEWMyKYbwTtCp3v9yNJRo1v16BjyXn6E9V0QAo
+# 4/Mun55SSFNIbzsn2QTZezAv2fbbCQMtUqxhO0Io7jZDcUPVHont9ZazbOcHDfym
+# cZSrFUSw47XsAy3WlKoxXVNJo/WhpJEjuwlAUw2ozgVSpDuhsufZpxplZhCPDe4v
+# o/KYWt4FmiehOROJVUHrtdrqwWBz7qfaWMXmMmHQQQqN8dzPscwdPJuV5XfajHfj
+# y0gEzWV0FCSc7kJ1AWkgurudyZ46IxobQIijv2LU+QJUMD380EW3X5XYPdEho+Ow
+# zqe1EOUKsvikZxu0ufiYJ3c1zyktRLEBXetrEiJ2zvxYjR9mw2/ZT5w1zUamBX2z
+# FP97gXXbs6p+9zdBZn1yUyUtvBhk2dflniaPf/qg1SrXoGqhghc+MIIXOgYKKwYB
 # BAGCNwMDATGCFyowghcmBgkqhkiG9w0BBwKgghcXMIIXEwIBAzEPMA0GCWCGSAFl
 # AwQCAQUAMHgGCyqGSIb3DQEJEAEEoGkEZzBlAgEBBglghkgBhv1sBwEwMTANBglg
-# hkgBZQMEAgEFAAQg+9EDnSbluiuQWjpRTK4NTEwIDNKIT1u6o3U50klNcDICEQC8
-# Mt55NH/HfUlHXw6WYVo8GA8yMDIzMDYxNzA1MzkzNlqgghMHMIIGwDCCBKigAwIB
+# hkgBZQMEAgEFAAQg6gQsJD4T4vVgDUpuK7AJVQGDCMm9Oylzzrerg3IyoHUCEQCk
+# +Xj+VAaji74VT/jmpuEmGA8yMDIzMDYxNzA5NDg1NlqgghMHMIIGwDCCBKigAwIB
 # AgIQDE1pckuU+jwqSj0pB4A9WjANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQGEwJV
 # UzEXMBUGA1UEChMORGlnaUNlcnQsIEluYy4xOzA5BgNVBAMTMkRpZ2lDZXJ0IFRy
 # dXN0ZWQgRzQgUlNBNDA5NiBTSEEyNTYgVGltZVN0YW1waW5nIENBMB4XDTIyMDky
@@ -383,19 +433,19 @@ Write-Output ""
 # Ew5EaWdpQ2VydCwgSW5jLjE7MDkGA1UEAxMyRGlnaUNlcnQgVHJ1c3RlZCBHNCBS
 # U0E0MDk2IFNIQTI1NiBUaW1lU3RhbXBpbmcgQ0ECEAxNaXJLlPo8Kko9KQeAPVow
 # DQYJYIZIAWUDBAIBBQCggdEwGgYJKoZIhvcNAQkDMQ0GCyqGSIb3DQEJEAEEMBwG
-# CSqGSIb3DQEJBTEPFw0yMzA2MTcwNTM5MzZaMCsGCyqGSIb3DQEJEAIMMRwwGjAY
-# MBYEFPOHIk2GM4KSNamUvL2Plun+HHxzMC8GCSqGSIb3DQEJBDEiBCCR0USgxsW8
-# 6BAfkeHkoQkNojhnB//Tf+KcREUgXhkh7zA3BgsqhkiG9w0BCRACLzEoMCYwJDAi
+# CSqGSIb3DQEJBTEPFw0yMzA2MTcwOTQ4NTZaMCsGCyqGSIb3DQEJEAIMMRwwGjAY
+# MBYEFPOHIk2GM4KSNamUvL2Plun+HHxzMC8GCSqGSIb3DQEJBDEiBCAVvAUwsDU9
+# pR31vw+MqwXYj/YgK0WbI8S+TbcSiPwYmjA3BgsqhkiG9w0BCRACLzEoMCYwJDAi
 # BCDH9OG+MiiJIKviJjq+GsT8T+Z4HC1k0EyAdVegI7W2+jANBgkqhkiG9w0BAQEF
-# AASCAgBbUK1cdfrHkhZdtFD/ZRBi3YcmuZyhw32cmExP8lEU1liYpv5V1lyGAX7O
-# PaDQJa+trnjeea28pymZkFn4KtXxLn5PwMn6Ad9R2zbAV7zCfascA5S3mwECNEGi
-# BGrQRZQVlaf7eU4oatj+W/NWzdyTvaJezAIXA1iV/KRdQn1/k+BYW7twYw8HAKx+
-# J7n8dWXYwV9PkASYv/3OiBNflvOn3S1NcG5uIFte9yt5AcIyWi7QZ512BXg/V1x6
-# d2KUJMDRvATbY5K8tx4M2lkEAv4pEbvBhYQr5LcIFYMlPhZvAOV/OZWa7ItpndNW
-# 8INcj4YCa7dgSAoByEdK2CFkMBiPn2QjRLKrPnlOdUUIqzpw+LPmysdKYKFmMHBj
-# RW1T5ajFctJ+kePeeDT4cRDNci4FNQTfHti53jh5K4jaGNAwIauS4hc4sIUndPc/
-# j/h2N1Lq8wikC/mktlMOBFpNJofjDvvcnQ+A8zeSuYyFNnU6Z/VgHxhlAG4/vr28
-# AUjkH8//ZreffHtk0SXK18ku60cwPv4jPTck1q3MXHMHnLPrsRLop5dZQnaLI1lp
-# HQy2J2d/rooI9VceeGVnV5ogOnQd1lVLvyDzgmjKDS96nmzlOuIBZM/kFKDLqvAw
-# WUpIy3MvnbxR2MZzjSO53slJFJvZD4GU5aZT/Rz8sVrRArVWDg==
+# AASCAgA/nakC+hrXucM0ak293j+L+FpZkAvSwbxlx3kRE+hU9UsCZNzzQPmLgv1R
+# Q4+nqgGR2QE8JaG5Zn9kLlgW3Tb/Hc+uBwaN0Q/8e/h5QwBCFj20UuclrhPA0Z6Q
+# Wx/ZDealaKy861wvLh30IfBCznu0GISv2uypbUV/Zhx0DX14RAXBt6kGb5EnSUBg
+# UpJUniqdsr9xtdmQLr7w8LUZOY0kcDGcTC3ROT1rt/mfpgUYTS9e7rDpZKV2E8NL
+# tV4YFYC8B/pfWXzm8DkRNrz3xSTLc71LhHYg6j4RP0tZGZv0jeeeQbaCru+KMPLr
+# ep86KkoAvAQYItveww9jsdRIlTk+RB1Jt9pYXMwYSfhnhulYhugLGCbw3VpuYUB+
+# XPDF3N8gDWtXC4ggez3nkU7ljdatZq+7KVcezZLeo77Zk1rVTr1f6YHIQWMRvMB9
+# EjxrnzjMa/IQ2SJWHpgB0Y7f5e62wjEAwgtH7EqMsE/VgTveD9KI01n05dHIM1H6
+# JFO8gIwIO3kjYUb+yzb8b5mF0a3Vr5Hd4d4WrU/8sSNr7stHknEdNcnGp4Zv1kds
+# z8zLJgm5YfBGczlo9KBlmqwPDo4H+9ljFM3Qmm+QqE8GUxN/OJwweqV01i4BrPt1
+# Cf6LIYY8j6MMVGdSc+/0DQC1ncfHT8r1sio4EUNp1qU2usn4Iw==
 # SIG # End signature block
